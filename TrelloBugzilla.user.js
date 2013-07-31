@@ -4,7 +4,7 @@
 // @version 0.1
 // @require http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js
 // @description Looks for card titles with 'Bug \d+' and adds badge/links to bugzilla. Also autocompletes new card titles that starts with 'Bug \d+' from bugzilla. Autocomplete is actived when pressing spacebar after 'Bug \d+'.
-// @match https://trello.com/board/*
+// @match https://trello.com/b/*
 // @copyright 2012+, Carsten Madsen
 // ==/UserScript==
 
@@ -13,19 +13,27 @@
 var bugzillaImgRed = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAHWSURBVHj aYvz//z8DJQAggJiQOe/fv2fv7Oz8rays/N+VkfG/iYnJfyD/1+rVq7ffu3dPFpsBAAHEAHIBCJ85c8bN2Nj4vwsDw/8zQLwKiO8CcRoQu0DxqlWrdsHUwzBAAIGJmTNnPgYa9j8UqhFElwPxf2MIDeIrKSn9FwSJoRkAEEAM0DD4DzMAyPi/G+QKY4hh5WAXGf8PDQ0FGwJ22d27CjADAAIIrLmjo+MXA9R2kAHvGBA2wwx6B8W7od6CeQcggKCmCEL8bgwxYCbUIGTDVkHDBia+CuotgACCueD3TDQN75D4xmAvCoK9ARMHBzAw0AECiBHkAlC0Mdy7x9ABNA3obAZXIAa6iKEcGlMVQHwWyjYuL2d4v2cPg8vZswx7gHyAAAK7AOif7SAbOqCmn4Ha3AHFsIDtgPq/vLz8P4MSkJ2W9h8ggBjevXvHDo4FQUQg/kdypqCg4H8lUIACnQ/SOBMYI8bAsAJFPcj1AAEEjwVQqLpAbXmH5BJjqI0gi9DTAAgDBBCcAVLkgmQ7yKCZxpCQxqUZhAECCJ4XgMl493ug21ZD+aDAXH0WLM4A9MZPXJkJIIAwTAR5pQMalaCABQUULttBGCCAGCnNzgABBgAMJ5THwGvJLAAAAABJRU5ErkJggg==" />';
 
 // grey bugz icon
-var bugzillaImg = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAABGdBTUEAAK/INwWK6QAAAAFzUkd CAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAJiS0dEAP+Hj8y/AAAACXBIWXMAAABIAAAASABGyWs+AAABQUlEQVQoz32RzUoCcQDEf/9NMbwsbSu0glZq0N6CLTp5qEMG9Rweons9Qegj1AsE9gCFEV0Liq4dsg+LPBTadhB1g+lQUXRw5jCHGeYwY8RwWF/SSVSjvFKaV3VwcHib+ZMQ4mIlkKuiAi0rK1euanXxRcTuI/IUyFNBGyrIU05x/QSMMAKPgFfyXBMyicMlY9Smc/dgGVUiSAM25zyzyBvvzBBn6e6gDkaMyKFESJMsENHAJokNtOhgGe18pAmJ6BIB8MIVE0SAzRSWzF7shhZx3mgCcVI4nDJHl5AbLKPKUY8u4JOlQYNZCqTYZ4EHVjHthNNL4uMB0OWKPmvkOKHP5lM5A6oManVXvkpaV1G2ttRO/KwgYjKwLcgDDfKMszU61v/3RXA8SQvwOCPgr/39hRC1uq+CLJX1W/899XB8Ah4WmVffqvqqAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEyLTEwLTE0VDE2OjQ3OjUwKzAyOjAw79+6cgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxMi0wMi0wMlQwMDoyODoxOSswMTowMHxV1nwAAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVhZHlxyWU8AAAAAElFTkSuQmCC" />';
+var bugzillaImg = '<img class="bugz" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAABGdBTUEAAK/INwWK6QAAAAFzUkd CAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAJiS0dEAP+Hj8y/AAAACXBIWXMAAABIAAAASABGyWs+AAABQUlEQVQoz32RzUoCcQDEf/9NMbwsbSu0glZq0N6CLTp5qEMG9Rweons9Qegj1AsE9gCFEV0Liq4dsg+LPBTadhB1g+lQUXRw5jCHGeYwY8RwWF/SSVSjvFKaV3VwcHib+ZMQ4mIlkKuiAi0rK1euanXxRcTuI/IUyFNBGyrIU05x/QSMMAKPgFfyXBMyicMlY9Smc/dgGVUiSAM25zyzyBvvzBBn6e6gDkaMyKFESJMsENHAJokNtOhgGe18pAmJ6BIB8MIVE0SAzRSWzF7shhZx3mgCcVI4nDJHl5AbLKPKUY8u4JOlQYNZCqTYZ4EHVjHthNNL4uMB0OWKPmvkOKHP5lM5A6oManVXvkpaV1G2ttRO/KwgYjKwLcgDDfKMszU61v/3RXA8SQvwOCPgr/39hRC1uq+CLJX1W/899XB8Ah4WmVffqvqqAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEyLTEwLTE0VDE2OjQ3OjUwKzAyOjAw79+6cgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxMi0wMi0wMlQwMDoyODoxOSswMTowMHxV1nwAAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVhZHlxyWU8AAAAAElFTkSuQmCC" />';
 
-var bugzillaLink = 'http://bugzilla.mozilla.com/show_bug.cgi?id=';
+var bugzillaLink = 'https://bugzilla.redhat.com/show_bug.cgi?id=';
+
+var bug_match = /BZ#(\d+)/
 
 var addBugzillaBadge = function() {
     $(".list-card-title").each(function(i,val){
         console.log($(this).html());
-        if ($(this).html().match(/Bug \d+/)) {
-            var regExpMatch = $(this).html().match(/Bug (\d+)/);
+        if ($(this).html().match(bug_match)) {
+            var regExpMatch = $(this).html().match(bug_match);
             //console.log("match found " + $(this).parent().children('.badges'));
             //console.log("bugz found " + $(this).parent().find(".bugz").length);
             if ($(this).parent().find(".bugz").length < 1){
-                $(this).parent().children('.badges').append('<a class="bugz" href="'+ bugzillaLink + regExpMatch[1] +'">'+bugzillaImg+'</a>');}
+                var badge = $(bugzillaImg);
+                badge.click(function(event){
+                    event.stopPropagation();
+                    window.open(bugzillaLink + regExpMatch[1]);
+                });
+                $(this).parent().children('.badges').append(badge);
+            }
         }
     });
 };
@@ -39,7 +47,7 @@ unsafeWindow.$("body").delegate(".js-card-title", "keypress", function(e){
     if(code == 32) { //Enter keycode
         var text = $(this).val();
         console.log("text="+text);
-        var regExpMatch = text.match(/Bug (\d+)/);
+        var regExpMatch = text.match(bug_match);
         var textarea = $(this);
         console.log(regExpMatch);
         if (regExpMatch) {
@@ -64,4 +72,5 @@ unsafeWindow.$("body").delegate(".js-card-title", "keypress", function(e){
     }
 });
 
+addBugzillaBadge();
 setInterval(addBugzillaBadge, 5000);
